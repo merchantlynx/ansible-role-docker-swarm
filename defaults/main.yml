@@ -1,0 +1,7 @@
+---
+# defaults file for docker-swarm
+docker_swarm_pip_package: "python-pip"
+docker_swarm_pip_executable: "{{ 'pip3' if docker_swarm_pip_package.startswith('python3') else 'pip' }}"
+
+docker_swarm_iface: "eth1"
+docker_swarm_advertise_addr: "{{ docker_swarm_iface }}"

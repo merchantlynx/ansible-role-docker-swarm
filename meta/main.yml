@@ -1,0 +1,20 @@
+---
+dependencies: []
+
+galaxy_info:
+  role_name: docker-swarm
+  author: "Brian O'Reilly"
+  description: Configure docker swarm
+  company: "Merchant Lynx Services"
+  license: "license (MIT)"
+  min_ansible_version: 2.4
+  platforms:
+    - name: EL
+      versions:
+        - 7
+  galaxy_tags:
+    - docker
+    - swarm
+    - container
+    - orchestration
+    - system

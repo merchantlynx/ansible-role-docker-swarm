@@ -1,0 +1,61 @@
+---
+# tasks file for docker-swarm
+
+- name: Ensure pip is installed
+  package:
+    name: "{{ docker_swarm_pip_package }}"
+
+- name: Ensure python docker is installed via pip
+  pip:
+    executable: "{{ docker_swarm_pip_executable }}"
+    name: docker
+
+- name: Initialize docker swarm
+  docker_swarm:
+    state: present
+    advertise_addr: "{{ docker_swarm_advertise_addr }}"
+  register: docker_swarm_info
+  when: inventory_hostname == groups['docker_swarm_managers'][0]
+
+- name: Register worker join token
+  set_fact: docker_swarm_worker_token="{{ docker_swarm_info.swarm_facts.JoinTokens.Worker }}"
+  when: inventory_hostname == groups['docker_swarm_managers'][0]
+
+- name: Register manager join token
+  set_fact: docker_swarm_manager_token="{{ docker_swarm_info.swarm_facts.JoinTokens.Manager }}"
+  when: inventory_hostname == groups['docker_swarm_managers'][0]
+
+- name: Detemine correct IP for master node
+  debug:
+    msg: "{{ hostvars[groups['docker_swarm_managers'][0]]['ansible_'+docker_swarm_iface]['ipv4']['address'] }}"
+  when: inventory_hostname == groups['docker_swarm_managers'][0]
+
+- name: Detemine correct IP for master node
+  set_fact: docker_swarm_master_ip="{{ hostvars[groups['docker_swarm_managers'][0]]['ansible_'+docker_swarm_iface]['ipv4']['address'] }}"
+  when: inventory_hostname == groups['docker_swarm_managers'][0]
+
+#- name: debug worker token
+  #debug:
+    #msg: "{{ hostvars[groups['docker_swarm_managers'][0]]['docker_swarm_worker_token'] }}"
+#- name: debug manager token
+  #debug:
+    #msg: "{{ hostvars[groups['docker_swarm_managers'][0]]['docker_swarm_manager_token'] }}"
+#- name: debug master manager ip
+  #debug:
+    #msg: "{{ hostvars[groups['docker_swarm_managers'][0]]['docker_swarm_master_ip'] }}"
+
+- name: Join managers to swarm
+  docker_swarm:
+    state: join
+    join_token: "{{ hostvars[groups['docker_swarm_managers'][0]]['docker_swarm_manager_token'] }}"
+    advertise_addr: "{{ docker_swarm_advertise_addr }}"
+    remote_addrs: [ "{{ hostvars[groups['docker_swarm_managers'][0]]['docker_swarm_master_ip'] }}" ]
+  when: inventory_hostname != groups['docker_swarm_managers'][0] and 'docker_swarm_managers' in group_names
+
+- name: Join workers to swarm
+  docker_swarm:
+    state: join
+    join_token: "{{ hostvars[groups['docker_swarm_managers'][0]]['docker_swarm_worker_token'] }}"
+    advertise_addr: "{{ docker_swarm_advertise_addr }}"
+    remote_addrs: [ "{{ hostvars[groups['docker_swarm_managers'][0]]['docker_swarm_master_ip'] }}" ]
+  when: "'docker_swarm_workers' in group_names"
